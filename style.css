@@ -20,58 +20,51 @@ body, html {
     transition: all 0.3s ease;
 }
 
-/* --- EFECTO GLITCH DE COLOR (CROMÁTICO) --- */
+/* --- NUEVO GLITCH CROMÁTICO AGRESIVO --- */
 .glitch-active {
-    animation: glitch-color 0.25s steps(2) infinite;
+    animation: glitch-anim-extreme 0.2s steps(1) infinite;
 }
 
-@keyframes glitch-color {
-    0% { 
-        transform: translate(4px, -2px); 
-        filter: hue-rotate(90deg) brightness(1.5);
-        box-shadow: 3px 0 0 red, -3px 0 0 blue;
+@keyframes glitch-anim-extreme {
+    0% {
+        transform: translate(5px, 2px) skew(5deg);
+        filter: hue-rotate(90deg) brightness(2);
+        text-shadow: 2px 0 red, -2px 0 blue;
+        clip-path: inset(10% 0 30% 0); /* Corta el widget horizontalmente */
     }
-    50% { 
-        transform: translate(-4px, 2px); 
-        filter: hue-rotate(270deg) contrast(2);
-        box-shadow: -3px 0 0 red, 3px 0 0 blue;
+    25% {
+        transform: translate(-5px, -2px) skew(-5deg);
+        filter: hue-rotate(180deg) contrast(1.5);
+        text-shadow: -3px 0 red, 3px 0 blue;
+        clip-path: inset(40% 0 10% 0);
     }
-    100% { 
-        transform: translate(0); 
+    50% {
+        transform: translate(2px, 5px);
+        filter: hue-rotate(270deg);
+        clip-path: inset(0 0 0 0);
+    }
+    75% {
+        transform: translate(-2px, -5px) scale(1.05);
+        filter: brightness(0.5) saturate(5);
+        text-shadow: 5px 0 green, -5px 0 purple;
+    }
+    100% {
+        transform: translate(0);
         filter: none;
-        box-shadow: 0 0 20px rgba(0, 255, 204, 0.3);
     }
 }
 
-.timer-style {
-    position: absolute; right: 20px; top: 15px;
-    font-size: 1.2rem; color: #ffffff;
-    text-shadow: 0 0 10px #00ffcc;
-}
-
-.oculto { opacity: 0; transform: scale(0.8) translateY(20px); pointer-events: none; }
-.mostrar { 
-    opacity: 1; transform: scale(1) translateY(0); pointer-events: auto;
-    animation: glitch-color 0.4s steps(1) 1;
-}
-
-.top-label {
-    position: absolute; top: 0; left: 50%;
-    transform: translateX(-50%);
-    background: #00ffcc; color: #000;
-    font-size: 0.7rem; font-weight: 900;
-    padding: 3px 20px; letter-spacing: 3px;
-    clip-path: polygon(10% 0, 90% 0, 100% 100%, 0% 100%);
-}
-
+/* Estilos de los elementos (Fijos) */
+.timer-style { position: absolute; right: 20px; top: 15px; font-size: 1.2rem; color: #fff; text-shadow: 0 0 10px #00ffcc; }
+.oculto { opacity: 0; transform: scale(0.8); pointer-events: none; }
+.mostrar { opacity: 1; transform: scale(1); animation: glitch-anim-extreme 0.4s steps(2) 1; }
+.top-label { position: absolute; top: 0; left: 50%; transform: translateX(-50%); background: #00ffcc; color: #000; font-size: 0.7rem; font-weight: 900; padding: 3px 20px; clip-path: polygon(10% 0, 90% 0, 100% 100%, 0% 100%); }
 .header { border-left: 4px solid #00ffcc; padding-left: 10px; margin-bottom: 1.2rem; }
-h2 { font-size: 1.1rem; color: #ffffff; text-transform: uppercase; margin: 10px 0 0 0; }
-
+h2 { font-size: 1.1rem; color: #fff; text-transform: uppercase; margin: 10px 0 0 0; }
 .duelo-container { display: flex; width: 100%; height: 2.2rem; background: #001a1a; border: 1px solid #00ffcc; overflow: hidden; }
 .barra { display: flex; align-items: center; padding: 0 10px; transition: width 0.8s cubic-bezier(0.18, 0.89, 0.32, 1.28); }
 .si { background: #00ffcc; color: #000; }
-.no { background: #004444; color: #ffffff; justify-content: flex-end; }
-
+.no { background: #004444; color: #fff; justify-content: flex-end; }
 .puntos-container { display: flex; justify-content: space-between; margin-top: 15px; }
 .label { font-size: 0.8rem; color: #00ffcc !important; font-weight: 900; }
-.puntos-num { font-size: 1rem; color: #ffffff; }
+.puntos-num { font-size: 1rem; color: #fff; }
