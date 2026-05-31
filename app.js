@@ -1,4 +1,4 @@
-// CONFIGURACIÓN: Reemplaza TU_USUARIO y TU_TOKEN (sin espacios)
+// CONFIGURACIÓN
 const miCanal = "creador"; 
 const oAuthToken = "oauth:TU_TOKEN"; 
 
@@ -26,9 +26,11 @@ function startTimer(duration) {
 }
 
 function actualizarDuelo(pSi, pNo) {
-    // ACTIVAR GLITCH VISUAL FUERTE
+    // ACTIVAR GLITCH DURANTE 400ms (Más tiempo para que sea visible)
     contenedor.classList.add("glitch-active");
-    setTimeout(() => contenedor.classList.remove("glitch-active"), 250);
+    setTimeout(() => {
+        contenedor.classList.remove("glitch-active");
+    }, 400);
 
     const total = pSi + pNo;
     let porcSi = 50, porcNo = 50;
@@ -66,7 +68,7 @@ ComfyJS.onPredictionEnd = ( (event) => {
 
 if(miCanal !== "creador") ComfyJS.Init(miCanal, oAuthToken);
 
-// PRUEBA MANUAL: Clic para ver el efecto
+// PRUEBA MANUAL: Al hacer clic se dispara el glitch de colores
 document.addEventListener("click", () => {
     if(contenedor.classList.contains("oculto")){
         contenedor.classList.remove("oculto");
