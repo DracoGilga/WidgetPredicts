@@ -1,4 +1,4 @@
-// CONFIGURACIÓN
+// CONFIGURACIÓN (REEMPLAZA ESTO)
 const miCanal = "creador"; 
 const oAuthToken = "oauth:TU_TOKEN"; 
 
@@ -26,11 +26,13 @@ function startTimer(duration) {
 }
 
 function actualizarDuelo(pSi, pNo) {
-    // ACTIVAR GLITCH DURANTE 400ms (Más tiempo para que sea visible)
+    // REINICIO DE GLITCH: Quitamos y ponemos la clase para que la animación se repita
+    contenedor.classList.remove("glitch-active");
+    void contenedor.offsetWidth; // TRUCO MAGICO: Fuerza al navegador a "notar" el cambio
     contenedor.classList.add("glitch-active");
-    setTimeout(() => {
-        contenedor.classList.remove("glitch-active");
-    }, 400);
+    
+    // El glitch dura 400ms cada vez que cambian los puntos
+    setTimeout(() => contenedor.classList.remove("glitch-active"), 400);
 
     const total = pSi + pNo;
     let porcSi = 50, porcNo = 50;
@@ -38,6 +40,7 @@ function actualizarDuelo(pSi, pNo) {
         porcSi = Math.round((pSi / total) * 100);
         porcNo = 100 - porcSi;
     }
+    
     barraSi.style.width = porcSi + "%";
     barraNo.style.width = porcNo + "%";
     document.getElementById("porcentaje-si").innerText = porcSi + "%";
@@ -59,7 +62,7 @@ ComfyJS.onPrediction = ( (event) => {
 
 ComfyJS.onPredictionEnd = ( (event) => {
     clearInterval(countdownInterval);
-    timerDisplay.innerText = "CLOSED";
+    timerDisplay.innerText = "CERRADO";
     setTimeout(() => {
         contenedor.classList.add("oculto");
         contenedor.classList.remove("mostrar");
@@ -68,12 +71,12 @@ ComfyJS.onPredictionEnd = ( (event) => {
 
 if(miCanal !== "creador") ComfyJS.Init(miCanal, oAuthToken);
 
-// PRUEBA MANUAL: Al hacer clic se dispara el glitch de colores
+// PRUEBA MANUAL: Cada clic simula una apuesta y lanza el glitch de colores
 document.addEventListener("click", () => {
     if(contenedor.classList.contains("oculto")){
         contenedor.classList.remove("oculto");
         contenedor.classList.add("mostrar");
         startTimer(60);
     }
-    actualizarDuelo(Math.random()*8000, Math.random()*8000);
+    actualizarDuelo(Math.floor(Math.random()*9000), Math.floor(Math.random()*9000));
 });
