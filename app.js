@@ -1,6 +1,6 @@
 // CONFIGURACIÓN: Borra los espacios cuando pongas el token real
 const miCanal = "creador"; 
-const oAuthToken = "oauth:TU_TOKEN"; 
+const oAuthToken = "oauth:TU_TOKEN"; // Reemplaza TU_TOKEN por tu clave real
 
 const contenedor = document.getElementById("contenedor-apuesta");
 const barraSi = document.getElementById("progreso-si");
@@ -74,10 +74,8 @@ ComfyJS.onPredictionEnd = ( (event) => {
     }, 30000); 
 });
 
-// Inicialización
-if(miCanal !== "creador") {
-    ComfyJS.Init(miCanal, oAuthToken);
-}
+// Inicialización corregida para que funcione con tu canal "creador"
+ComfyJS.Init(miCanal, oAuthToken);
 
 // PRUEBA MANUAL: Haz clic en la pantalla para simular una apuesta
 document.addEventListener("click", () => {
