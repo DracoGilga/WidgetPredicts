@@ -1,4 +1,4 @@
-// CONFIGURACIÓN PARA GITHUB
+// CONFIGURACIÓN: Reemplaza TU_USUARIO y TU_TOKEN (sin espacios)
 const miCanal = "creador"; 
 const oAuthToken = "oauth:TU_TOKEN"; 
 
@@ -9,6 +9,8 @@ const puntosSiCont = document.getElementById("puntos-si");
 const puntosNoCont = document.getElementById("puntos-no");
 const tituloH2 = document.getElementById("titulo");
 const timerDisplay = document.getElementById("timer-display");
+const labelSi = document.querySelector(".si-puntos .label");
+const labelNo = document.querySelector(".no-puntos .label");
 
 let countdownInterval;
 
@@ -24,9 +26,9 @@ function startTimer(duration) {
 }
 
 function actualizarDuelo(pSi, pNo) {
-    // Glitch cada vez que los puntos cambian
+    // ACTIVAR GLITCH VISUAL FUERTE
     contenedor.classList.add("glitch-active");
-    setTimeout(() => contenedor.classList.remove("glitch-active"), 200);
+    setTimeout(() => contenedor.classList.remove("glitch-active"), 250);
 
     const total = pSi + pNo;
     let porcSi = 50, porcNo = 50;
@@ -46,10 +48,10 @@ ComfyJS.onPrediction = ( (event) => {
     contenedor.classList.remove("oculto");
     contenedor.classList.add("mostrar");
     tituloH2.innerText = event.title.toUpperCase();
+    labelSi.innerText = event.outcomes[0].title.toUpperCase();
+    labelNo.innerText = event.outcomes[1].title.toUpperCase();
     
-    // Iniciar timer (Twitch suele enviar la duración en segundos)
     if(event.prediction_window) startTimer(event.prediction_window);
-
     actualizarDuelo(event.outcomes[0].channel_points || 0, event.outcomes[1].channel_points || 0);
 });
 
@@ -64,12 +66,12 @@ ComfyJS.onPredictionEnd = ( (event) => {
 
 if(miCanal !== "creador") ComfyJS.Init(miCanal, oAuthToken);
 
-// PRUEBA MANUAL
+// PRUEBA MANUAL: Clic para ver el efecto
 document.addEventListener("click", () => {
-    contenedor.classList.toggle("mostrar");
-    contenedor.classList.toggle("oculto");
-    if(!contenedor.classList.contains("oculto")) {
+    if(contenedor.classList.contains("oculto")){
+        contenedor.classList.remove("oculto");
+        contenedor.classList.add("mostrar");
         startTimer(60);
-        actualizarDuelo(Math.random()*5000, Math.random()*5000);
     }
+    actualizarDuelo(Math.random()*8000, Math.random()*8000);
 });
