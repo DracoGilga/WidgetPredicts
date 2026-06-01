@@ -6,7 +6,7 @@
 
 			<div class="input-group">
 				<label>Tu nombre de usuario en Twitch:</label>
-				<input v-model="canal" type="text" placeholder="ej. elxokas" />
+				<input v-model="canal" type="text" placeholder="Tu nombre de usuario en Twitch" />
 			</div>
 
 			<button @click="conectarTwitch" :disabled="!canal">
