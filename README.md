@@ -9,8 +9,8 @@ An interactive, cyberpunk-themed Twitch prediction widget designed for streamers
 
 ## Contributors
 
-<a href="https://github.com/jesteredone/WidgetPredicts/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=jesteredone/WidgetPredicts" />
+<a href="https://github.com/DracoGilga/WidgetPredicts/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=DracoGilga/WidgetPredicts" />
 </a>
 
 ## Features
