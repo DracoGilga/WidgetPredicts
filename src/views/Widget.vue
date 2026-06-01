@@ -35,8 +35,8 @@
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue';
-import ComfyJS from 'comfy.js';
 
+// Variables reactivas
 const tokenValido = ref(false);
 const mostrarWidget = ref(false);
 const glitchActive = ref(false);
@@ -47,6 +47,7 @@ const puntosSiRaw = ref(0);
 const puntosNoRaw = ref(0);
 const timerDisplay = ref("00:00");
 
+// Cálculos de porcentajes
 const porcSi = computed(() => {
 	const total = puntosSiRaw.value + puntosNoRaw.value;
 	return total > 0 ? Math.round((puntosSiRaw.value / total) * 100) : 50;
@@ -55,6 +56,7 @@ const porcNo = computed(() => 100 - porcSi.value);
 const puntosSi = computed(() => puntosSiRaw.value.toLocaleString());
 const puntosNo = computed(() => puntosNoRaw.value.toLocaleString());
 
+// Temporizador
 let countdownInterval;
 const startTimer = (duration) => {
 	clearInterval(countdownInterval);
@@ -70,13 +72,14 @@ const startTimer = (duration) => {
 	}, 1000);
 };
 
+// Animación Glitch
 const triggerGlitch = () => {
 	glitchActive.value = false;
 	setTimeout(() => { glitchActive.value = true; }, 10);
 	setTimeout(() => { glitchActive.value = false; }, 350);
 };
 
-// Función de prueba que llamaremos con el clic
+// Función de simulación para pruebas
 const simularApuesta = () => {
 	if (!mostrarWidget.value) {
 		mostrarWidget.value = true;
@@ -90,7 +93,10 @@ const simularApuesta = () => {
 	triggerGlitch();
 };
 
-onMounted(() => {
+let ws = null; // Variable para el WebSocket
+
+onMounted(async () => {
+	// 1. Obtener parámetros de la URL o LocalStorage
 	const hashString = window.location.hash.substring(1);
 	const paramsHash = new URLSearchParams(hashString);
 	let token = paramsHash.get("access_token");
@@ -104,38 +110,88 @@ onMounted(() => {
 
 	if (token && canal) {
 		tokenValido.value = true;
-		const finalToken = token.startsWith('oauth:') ? token : `oauth:${token}`;
 
-		ComfyJS.onPrediction = (event) => {
-			mostrarWidget.value = true;
-			titulo.value = event.title.toUpperCase();
-			labelSi.value = event.outcomes[0].title.toUpperCase();
-			labelNo.value = event.outcomes[1].title.toUpperCase();
+		const cleanToken = token.replace('oauth:', '');
+		const clientId = import.meta.env.VITE_TWITCH_CLIENT_ID;
 
-			if (event.prediction_window) startTimer(event.prediction_window);
+		try {
+			const userRes = await fetch(`https://api.twitch.tv/helix/users?login=${canal}`, {
+				headers: {
+					'Client-ID': clientId,
+					'Authorization': `Bearer ${cleanToken}`
+				}
+			});
+			const userData = await userRes.json();
+			if (!userData.data || userData.data.length === 0) throw new Error("Canal no encontrado");
+			const broadcasterId = userData.data[0].id;
 
-			puntosSiRaw.value = event.outcomes[0].channel_points || 0;
-			puntosNoRaw.value = event.outcomes[1].channel_points || 0;
-			triggerGlitch();
-		};
+			ws = new WebSocket('wss://eventsub.wss.twitch.tv/ws');
 
-		ComfyJS.onPredictionEnd = (event) => {
-			clearInterval(countdownInterval);
-			timerDisplay.value = "CERRADO";
-			setTimeout(() => { mostrarWidget.value = false; }, 30000);
-		};
+			ws.onmessage = async (event) => {
+				const data = JSON.parse(event.data);
 
-		ComfyJS.Init(canal, finalToken);
+				if (data.metadata.message_type === 'session_welcome') {
+					const sessionId = data.payload.session.id;
+					const topics = ['channel.prediction.begin', 'channel.prediction.progress', 'channel.prediction.end'];
+
+					for (const topic of topics) {
+						await fetch('https://api.twitch.tv/helix/eventsub/subscriptions', {
+							method: 'POST',
+							headers: {
+								'Client-ID': clientId,
+								'Authorization': `Bearer ${cleanToken}`,
+								'Content-Type': 'application/json'
+							},
+							body: JSON.stringify({
+								type: topic,
+								version: '1',
+								condition: { broadcaster_user_id: broadcasterId },
+								transport: { method: 'websocket', session_id: sessionId }
+							})
+						});
+					}
+				}
+
+				if (data.metadata.message_type === 'notification') {
+					const type = data.metadata.subscription_type;
+					const payload = data.payload.event;
+
+					if (type === 'channel.prediction.begin' || type === 'channel.prediction.progress') {
+						mostrarWidget.value = true;
+						titulo.value = payload.title.toUpperCase();
+						labelSi.value = payload.outcomes[0].title.toUpperCase();
+						labelNo.value = payload.outcomes[1].title.toUpperCase();
+						puntosSiRaw.value = payload.outcomes[0].channel_points || 0;
+						puntosNoRaw.value = payload.outcomes[1].channel_points || 0;
+
+						// Solo iniciar el reloj cuando la predicción apenas empieza
+						if (type === 'channel.prediction.begin') {
+							const locksAt = new Date(payload.locks_at).getTime();
+							const now = new Date().getTime();
+							const diffSeconds = Math.max(0, Math.floor((locksAt - now) / 1000));
+							startTimer(diffSeconds);
+						}
+						triggerGlitch();
+					}
+
+					if (type === 'channel.prediction.end') {
+						clearInterval(countdownInterval);
+						timerDisplay.value = "CERRADO";
+						setTimeout(() => { mostrarWidget.value = false; }, 30000);
+					}
+				}
+			};
+		} catch (error) {
+			console.error("Error conectando con Twitch API:", error);
+		}
 	}
 
-	// --- ACTIVAR PRUEBA MANUAL ---
 	window.addEventListener("click", simularApuesta);
 });
 
 onUnmounted(() => {
 	clearInterval(countdownInterval);
-	ComfyJS.Disconnect();
-	// --- DESACTIVAR PRUEBA MANUAL AL CERRAR ---
+	if (ws) ws.close();
 	window.removeEventListener("click", simularApuesta);
 });
 </script>
