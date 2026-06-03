@@ -1,43 +1,47 @@
 <template>
-	<div v-if="!tokenValido" class="msg-estado">ERROR: Falta el Token de Twitch.</div>
+	<div v-if="!tokenValido" class="msg-estado">{{ errorMensaje }}</div>
 
-	<div v-show="mostrarWidget" id="contenedor-apuesta"
-		:class="{ 'mostrar': mostrarWidget, 'oculto': !mostrarWidget, 'glitch-active': glitchActive }">
-		<div class="top-label">LUDOPATÍA ON</div>
-		<div id="timer-display" class="timer-style">{{ timerDisplay }}</div>
+	<Transition name="tv">
+		<div v-show="mostrarWidget" id="contenedor-apuesta" :class="{ 'glitch-active': glitchActive }">
+			<div class="top-label">LUDOPATÍA ON</div>
+			<div id="timer-display" class="timer-style">{{ timerDisplay }}</div>
 
-		<div class="header">
-			<span class="badge">SECTION 9 SYSTEM</span>
-			<h2>{{ titulo }}</h2>
+			<div class="header">
+				<span class="badge">SECTION 9 SYSTEM</span>
+				<h2>{{ titulo }}</h2>
+			</div>
+
+			<div class="duelo-container">
+				<div class="barra si" :style="{ width: porcSi + '%' }">
+					<span class="perc">{{ porcSi }}%</span>
+				</div>
+				<div class="barra no" :style="{ width: porcNo + '%' }">
+					<span class="perc">{{ porcNo }}%</span>
+				</div>
+			</div>
+
+			<div class="puntos-container">
+				<div class="bando-puntos si-puntos">
+					<span class="label">{{ labelSi }}</span>
+					<span class="puntos-num">{{ puntosSi }} PTS</span>
+				</div>
+				<div class="bando-puntos no-puntos">
+					<span class="label">{{ labelNo }}</span>
+					<span class="puntos-num">{{ puntosNo }} PTS</span>
+				</div>
+			</div>
 		</div>
-
-		<div class="duelo-container">
-			<div class="barra si" :style="{ width: porcSi + '%' }">
-				<span class="perc">{{ porcSi }}%</span>
-			</div>
-			<div class="barra no" :style="{ width: porcNo + '%' }">
-				<span class="perc">{{ porcNo }}%</span>
-			</div>
-		</div>
-
-		<div class="puntos-container">
-			<div class="bando-puntos si-puntos">
-				<span class="label">{{ labelSi }}</span>
-				<span class="puntos-num">{{ puntosSi }} PTS</span>
-			</div>
-			<div class="bando-puntos no-puntos">
-				<span class="label">{{ labelNo }}</span>
-				<span class="puntos-num">{{ puntosNo }} PTS</span>
-			</div>
-		</div>
-	</div>
+	</Transition>
 </template>
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue';
 
-// Variables reactivas
+const TIEMPO_PRUEBA_SEG = 10;
+const TIEMPO_OCULTAR_MS = 10000;
+
 const tokenValido = ref(false);
+const errorMensaje = ref("ESPERANDO CONEXIÓN...");
 const mostrarWidget = ref(false);
 const glitchActive = ref(false);
 const titulo = ref("ESPERANDO DATOS...");
@@ -47,7 +51,6 @@ const puntosSiRaw = ref(0);
 const puntosNoRaw = ref(0);
 const timerDisplay = ref("00:00");
 
-// Cálculos de porcentajes
 const porcSi = computed(() => {
 	const total = puntosSiRaw.value + puntosNoRaw.value;
 	return total > 0 ? Math.round((puntosSiRaw.value / total) * 100) : 50;
@@ -56,8 +59,8 @@ const porcNo = computed(() => 100 - porcSi.value);
 const puntosSi = computed(() => puntosSiRaw.value.toLocaleString());
 const puntosNo = computed(() => puntosNoRaw.value.toLocaleString());
 
-// Temporizador
 let countdownInterval;
+
 const startTimer = (duration) => {
 	clearInterval(countdownInterval);
 	let timer = duration;
@@ -65,25 +68,28 @@ const startTimer = (duration) => {
 		let minutes = Math.floor(timer / 60);
 		let seconds = timer % 60;
 		timerDisplay.value = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+
 		if (--timer < 0) {
 			clearInterval(countdownInterval);
 			timerDisplay.value = "00:00";
+
+			setTimeout(() => {
+				mostrarWidget.value = false;
+			}, TIEMPO_OCULTAR_MS);
 		}
 	}, 1000);
 };
 
-// Animación Glitch
 const triggerGlitch = () => {
 	glitchActive.value = false;
 	setTimeout(() => { glitchActive.value = true; }, 10);
 	setTimeout(() => { glitchActive.value = false; }, 350);
 };
 
-// Función de simulación para pruebas
 const simularApuesta = () => {
 	if (!mostrarWidget.value) {
 		mostrarWidget.value = true;
-		startTimer(60);
+		startTimer(TIEMPO_PRUEBA_SEG);
 	}
 	titulo.value = "ALERTA DE INTRUSIÓN EN LA RED";
 	labelSi.value = "INTERCEPTAR";
@@ -93,36 +99,39 @@ const simularApuesta = () => {
 	triggerGlitch();
 };
 
-let ws = null; // Variable para el WebSocket
+let ws = null;
 
 onMounted(async () => {
-	// 1. Obtener parámetros de la URL o LocalStorage
 	const hashString = window.location.hash.substring(1);
 	const paramsHash = new URLSearchParams(hashString);
-	let token = paramsHash.get("access_token");
-	let canal = localStorage.getItem('gits_canal_twitch');
+	let tokenUrl = paramsHash.get("access_token");
 
-	if (!token) {
-		const paramsQuery = new URLSearchParams(window.location.search);
-		token = paramsQuery.get("token");
-		canal = paramsQuery.get("canal");
-	}
+	let token = tokenUrl || localStorage.getItem('gits_twitch_token_v2');
 
-	if (token && canal) {
+	if (token) {
+		localStorage.setItem('gits_twitch_token_v2', token);
 		tokenValido.value = true;
 
 		const cleanToken = token.replace('oauth:', '');
 		const clientId = import.meta.env.VITE_TWITCH_CLIENT_ID;
 
 		try {
-			const userRes = await fetch(`https://api.twitch.tv/helix/users?login=${canal}`, {
+			const userRes = await fetch(`https://api.twitch.tv/helix/users`, {
 				headers: {
 					'Client-ID': clientId,
 					'Authorization': `Bearer ${cleanToken}`
 				}
 			});
+
+			if (userRes.status === 401) {
+				tokenValido.value = false;
+				errorMensaje.value = "TOKEN EXPIRADO. Entra desde tu navegador, genera un link nuevo y pégalo aquí.";
+				localStorage.removeItem('gits_twitch_token_v2');
+				return;
+			}
+
 			const userData = await userRes.json();
-			if (!userData.data || userData.data.length === 0) throw new Error("Canal no encontrado");
+			if (!userData.data || userData.data.length === 0) throw new Error("Usuario no encontrado");
 			const broadcasterId = userData.data[0].id;
 
 			ws = new WebSocket('wss://eventsub.wss.twitch.tv/ws');
@@ -164,7 +173,6 @@ onMounted(async () => {
 						puntosSiRaw.value = payload.outcomes[0].channel_points || 0;
 						puntosNoRaw.value = payload.outcomes[1].channel_points || 0;
 
-						// Solo iniciar el reloj cuando la predicción apenas empieza
 						if (type === 'channel.prediction.begin') {
 							const locksAt = new Date(payload.locks_at).getTime();
 							const now = new Date().getTime();
@@ -177,13 +185,15 @@ onMounted(async () => {
 					if (type === 'channel.prediction.end') {
 						clearInterval(countdownInterval);
 						timerDisplay.value = "CERRADO";
-						setTimeout(() => { mostrarWidget.value = false; }, 30000);
+						setTimeout(() => { mostrarWidget.value = false; }, TIEMPO_OCULTAR_MS);
 					}
 				}
 			};
 		} catch (error) {
 			console.error("Error conectando con Twitch API:", error);
 		}
+	} else {
+		errorMensaje.value = "ERROR: Falta el Token. Ingresa desde el Home para generarlo.";
 	}
 
 	window.addEventListener("click", simularApuesta);
@@ -217,8 +227,59 @@ onUnmounted(() => {
 	position: relative;
 	box-sizing: border-box;
 	font-family: 'Share Tech Mono', monospace;
-	transition: opacity 0.5s ease, transform 0.5s ease;
+	/* Se elimina la transition base porque Vue manejará la animación de TV */
 }
+
+/* --- ANIMACIÓN CRT (TELE VIEJA) --- */
+.tv-enter-active {
+	animation: crt-turn-on 0.5s cubic-bezier(0.23, 1, 0.32, 1) forwards;
+}
+
+.tv-leave-active {
+	animation: crt-turn-off 0.4s cubic-bezier(0.23, 1, 0.32, 1) forwards;
+}
+
+@keyframes crt-turn-on {
+	0% {
+		transform: scale(1, 0.005);
+		opacity: 0;
+		filter: brightness(3);
+	}
+
+	40% {
+		transform: scale(1, 0.005);
+		opacity: 1;
+		filter: brightness(3);
+	}
+
+	100% {
+		transform: scale(1, 1);
+		opacity: 1;
+		filter: brightness(1);
+	}
+}
+
+@keyframes crt-turn-off {
+	0% {
+		transform: scale(1, 1);
+		opacity: 1;
+		filter: brightness(1);
+	}
+
+	60% {
+		transform: scale(1, 0.005);
+		opacity: 1;
+		filter: brightness(3);
+	}
+
+	100% {
+		transform: scale(0, 0.005);
+		opacity: 0;
+		filter: brightness(3);
+	}
+}
+
+/* ---------------------------------- */
 
 .glitch-active {
 	animation: glitch-color 0.2s steps(1) infinite;
@@ -250,16 +311,6 @@ onUnmounted(() => {
 	font-size: 1.1rem;
 	color: #fff;
 	text-shadow: 0 0 10px #00ffcc;
-}
-
-.oculto {
-	opacity: 0;
-	transform: scale(0.8);
-}
-
-.mostrar {
-	opacity: 1;
-	transform: scale(1);
 }
 
 .top-label {
