@@ -12,27 +12,37 @@
 			<button @click="conectarTwitch" :disabled="!canal">
 				CONECTAR CON TWITCH
 			</button>
-
-			<p class="nota">Al autorizar, serás redirigido a la pantalla verde de tu widget. Copia esa URL completa y
-				pégala en OBS.</p>
 		</div>
 	</div>
 </template>
 
 <script setup>
-import { ref } from 'vue';
-
-const canal = ref('');
+import { onMounted } from 'vue';
 
 const conectarTwitch = () => {
-	localStorage.setItem('gits_canal_twitch', canal.value.trim().toLowerCase());
-	const clientId = import.meta.env.VITE_TWITCH_CLIENT_ID;
-	const redirectUri = import.meta.env.VITE_TWITCH_REDIRECT_URI;
+    const clientId = import.meta.env.VITE_TWITCH_CLIENT_ID;
+    const redirectUri = import.meta.env.VITE_TWITCH_REDIRECT_URI;
 
-	const scopes = "channel:read:predictions";
-	const authUrl = `https://id.twitch.tv/oauth2/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=token&scope=${scopes}`;
-	window.location.href = authUrl;
+    const scopes = "channel:read:predictions";
+    const authUrl = `https://id.twitch.tv/oauth2/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=token&scope=${scopes}`;
+    window.location.href = authUrl;
 };
+
+onMounted(() => {
+    const hashString = window.location.hash.substring(1);
+    const paramsHash = new URLSearchParams(hashString);
+    const tokenTwitch = paramsHash.get("access_token");
+
+    if (tokenTwitch) {
+        localStorage.setItem('gits_twitch_token_v2', tokenTwitch);
+        window.location.href = `/widget#access_token=${tokenTwitch}`;
+    } else {
+        const tokenGuardado = localStorage.getItem('gits_twitch_token_v2');
+        if (tokenGuardado) {
+            window.location.href = `/widget#access_token=${tokenGuardado}`;
+        }
+    }
+});
 </script>
 
 <style scoped>
